@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Rono Comeback</title>
+<meta name="theme-color" content="#0d0f0e">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: one-column phone app. Header with day, rank and score; tabbed sections; bottom nav. */
+:root{
+  --bg:#0d0f0e; --panel:#151917; --panel2:#1b201d; --line:#252e29; --fg:#ecf1ee; --mute:#87958c;
+  --accent:#e8ff6a; --accent-ink:#10140c; --good:#5fd38d; --bad:#ff6b5c; --warn:#ffb35c;
+  --display:"Anton","Impact","Arial Narrow",sans-serif;
+  --body:"Barlow","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg);color:var(--fg)}
+body{font-family:var(--body);font-size:16px;line-height:1.45;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:12px 96px}
+.wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:16px}
+header{display:flex;flex-direction:column;gap:8px;padding-top:4px}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--mute)}
+h1{font-family:var(--display);font-weight:400;font-size:clamp(46px,14vw,74px);line-height:.9;margin:0;text-transform:uppercase}
+h1 span{color:var(--accent)}
+.rank{text-align:right;display:flex;flex-direction:column;gap:2px;min-width:0}
+.rank b{font-family:var(--display);font-weight:400;font-size:22px;text-transform:uppercase;color:var(--accent);letter-spacing:.03em}
+.rank small{font:500 11px var(--mono);color:var(--mute)}
+.sub{color:var(--mute);margin:0}
+.bar{height:8px;background:var(--line);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--accent);width:0;transition:width .4s}
+.bar.thin{height:5px}
+.bar.over i{background:var(--warn)}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px;min-width:0}
+.stat b{font-family:var(--mono);font-size:19px;display:block;font-variant-numeric:tabular-nums}
+.stat small{font-size:11.5px;color:var(--mute)}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.week div{display:flex;flex-direction:column;align-items:center;gap:4px;font:500 10px var(--mono);color:var(--mute)}
+.week i{width:100%;aspect-ratio:1;max-width:40px;border-radius:8px;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;font-style:normal;font:700 12px var(--mono)}
+.week i.ok{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.week i.pass{background:var(--panel2);color:var(--warn);border-color:var(--warn)}
+.week i.miss{background:transparent;color:var(--bad);border-color:var(--bad)}
+.week i.now{outline:2px solid var(--fg);outline-offset:1px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--panel);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(6,1fr);gap:2px;padding:6px max(6px,env(safe-area-inset-right,0px)) calc(6px + env(safe-area-inset-bottom,0px)) max(6px,env(safe-area-inset-left,0px));z-index:5}
+nav button{background:none;border:0;color:var(--mute);font:600 11.5px var(--body);padding:9px 0;border-radius:8px;cursor:pointer;letter-spacing:.03em;text-transform:uppercase}
+nav button[aria-selected="true"]{color:var(--accent-ink);background:var(--accent)}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+section{display:flex;flex-direction:column;gap:12px}
+h2{font-family:var(--display);font-weight:400;text-transform:uppercase;font-size:28px;margin:4px 0 0;letter-spacing:.02em;text-wrap:balance}
+h3{font:500 12px var(--mono);color:var(--mute);text-transform:uppercase;letter-spacing:.12em;margin:0}
+.list{display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.row{display:flex;gap:12px;align-items:flex-start;padding:13px 14px;border:0;border-bottom:1px solid var(--line);cursor:pointer;user-select:none;background:none;color:inherit;text-align:left;font:inherit;width:100%}
+.row:last-child{border-bottom:0}
+.row.static{cursor:default}
+.box{flex:none;width:22px;height:22px;border:2px solid var(--mute);border-radius:6px;margin-top:1px;display:grid;place-items:center;font:700 13px var(--mono);color:var(--accent-ink)}
+.row.done .box{background:var(--accent);border-color:var(--accent)}
+.row.done .t{color:var(--mute);text-decoration:line-through}
+.row .t{font-weight:600}
+.row .d{display:block;font-size:13.5px;color:var(--mute);font-weight:400;margin-top:2px}
+.row .grow{flex:1;min-width:0}
+.tag{font:700 11.5px var(--mono);color:var(--accent);flex:none;padding-top:3px;white-space:nowrap}
+.auto{font:500 10px var(--mono);color:var(--mute);border:1px solid var(--line);border-radius:4px;padding:1px 4px;margin-left:6px;vertical-align:2px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.card p{margin:0}
+.card.hot{border-color:var(--bad);background:linear-gradient(var(--panel),var(--panel)) padding-box}
+.card.hot h3{color:var(--bad)}
+.card.amber{border-color:var(--warn)}
+.card.amber h3{color:var(--warn)}
+.card.lime{border-color:var(--accent)}
+.muted{color:var(--mute);font-size:14px}
+.big{font-size:18px;font-weight:600}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chip{flex:none;background:var(--panel);border:1px solid var(--line);color:var(--fg);border-radius:999px;padding:7px 12px;font:600 13px var(--body);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+table{border-collapse:collapse;width:100%;font-size:14px}
+td{padding:7px 0;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+td.r{text-align:right;font-family:var(--mono);color:var(--accent);white-space:nowrap;padding-left:10px}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:12px 16px;font:700 15px var(--body);cursor:pointer}
+.btn.ghost{background:none;color:var(--fg);border:1px solid var(--line)}
+.btn.red{background:var(--bad);color:#1a0806}
+.btn.sm{padding:8px 12px;font-size:13.5px}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--mute);min-width:0}
+input,select,textarea{background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font:500 15px var(--body);width:100%;min-width:0}
+textarea{resize:vertical;min-height:70px}
+input[type=number]{font-family:var(--mono)}
+.scale{display:flex;gap:6px}
+.scale button{flex:1;background:var(--bg);border:1px solid var(--line);color:var(--fg);border-radius:8px;padding:9px 0;font:700 14px var(--mono);cursor:pointer}
+.scale button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.macro{display:flex;flex-direction:column;gap:6px}
+.macro .lbl{display:flex;justify-content:space-between;font:600 14px var(--body)}
+.macro .lbl span{font-family:var(--mono);color:var(--mute);font-variant-numeric:tabular-nums}
+.food{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.food:last-child{border-bottom:0}
+.food .grow{flex:1;min-width:0}
+.food .d{font-size:12.5px;color:var(--mute);font-family:var(--mono)}
+.qty{display:flex;align-items:center;gap:6px}
+.qty button{width:32px;height:32px;border-radius:8px;border:1px solid var(--line);background:var(--bg);color:var(--fg);font:700 17px var(--mono);cursor:pointer}
+.qty b{font:700 15px var(--mono);min-width:18px;text-align:center}
+.food.on{background:var(--panel2)}
+.food.on .qty b{color:var(--accent)}
+.word{display:flex;flex-direction:column;gap:1px;padding:9px 0;border-bottom:1px solid var(--line)}
+.word:last-child{border-bottom:0}
+.word b{font-size:17px}
+.word em{color:var(--mute);font-size:14px}
+ul.plain{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px}
+details summary{cursor:pointer;font-weight:600;list-style:none;display:flex;justify-content:space-between}
+details summary::after{content:"+";font-family:var(--mono);color:var(--accent)}
+details[open] summary::after{content:"–"}
+details[open] summary{margin-bottom:8px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(78px + env(safe-area-inset-bottom,0px));background:var(--accent);color:var(--accent-ink);font:700 14px var(--body);padding:10px 16px;border-radius:999px;z-index:9;opacity:0;pointer-events:none;transition:opacity .25s}
+.toast.show{opacity:1}
+.now{background:var(--panel);border:1px solid var(--accent);border-radius:14px;padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.now .lbl{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.now .clock{font:700 28px var(--mono);color:var(--accent);font-variant-numeric:tabular-nums;white-space:nowrap}
+.now .what{font-family:var(--display);font-weight:400;font-size:30px;line-height:1;text-transform:uppercase;letter-spacing:.02em}
+.now .next{font-size:14px;color:var(--mute);border-top:1px solid var(--line);padding-top:8px}
+.tt .row .tm{font:700 12.5px var(--mono);color:var(--accent);width:92px;flex:none;padding-top:3px}
+.tt .row.cur{background:var(--panel2)}
+.tt .row.cur .tm::after{content:"NOW";display:block;color:var(--accent-ink);background:var(--accent);border-radius:4px;width:max-content;padding:0 5px;margin-top:4px;font-size:10px}
+.tt .row.past:not(.done) .t{color:var(--bad)}
+.road .row .tm{font:700 12px var(--mono);width:58px;flex:none;padding-top:3px;color:var(--mute)}
+.road .row.cur{background:var(--panel2)}
+.road .row.cur .tm{color:var(--accent)}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:4px}
+.seg button{background:none;border:0;color:var(--mute);font:600 13px var(--body);padding:8px 0;border-radius:7px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--panel2);color:var(--fg)}
+.copybox{font:500 12.5px var(--mono);white-space:pre-wrap;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;max-height:220px;overflow:auto}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+<style>html{-webkit-text-size-adjust:100%}body{margin:0}img{max-width:100%}[hidden]{display:none!important}body{padding-top:calc(12px + env(safe-area-inset-top,0px))!important}</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <div class="top">
+      <div>
+        <div class="eyebrow" id="dateline">Comeback</div>
+        <h1>Day <span id="dayNum">0</span></h1>
+      </div>
+      <div class="rank"><b id="rankName">Sofa</b><small id="rankXp">0 XP</small><div class="bar thin" style="width:120px;margin-left:auto"><i id="rankBar"></i></div></div>
+    </div>
+    <p class="sub" id="dayMsg"></p>
+    <div class="bar"><i id="todayBar"></i></div>
+    <div class="stats">
+      <div class="stat"><b id="sToday">0/10</b><small>today</small></div>
+      <div class="stat"><b id="sStreak">0</b><small>streak</small></div>
+      <div class="stat"><b id="sBest">0</b><small>best</small></div>
+      <div class="stat"><b id="sPass">1</b><small>pass left</small></div>
+    </div>
+    <div class="week" id="week"></div>
+  </header>
+
+  <!-- TODAY -->
+  <section id="tab-today">
+    <div id="debts"></div>
+    <div class="now" id="nowCard"></div>
+    <div class="chips" id="dayPick"></div>
+    <h2 id="todayTitle">Today's 10</h2>
+    <p class="muted">8 of 10 keeps the streak alive. Under 8 is a miss, and a miss means punishment.</p>
+    <div class="list" id="quests"></div>
+
+    <div class="card lime" id="checkin">
+      <h3>Night check-in</h3>
+      <p class="muted">Fill this before bed, then copy it and send it to Claude in the chat.</p>
+      <label class="f">Mood<div class="scale" id="ciMood"></div></label>
+      <label class="f">Energy<div class="scale" id="ciEnergy"></div></label>
+      <div class="grid2">
+        <label class="f">Slept (hrs)<input id="ciSleep" type="number" inputmode="decimal" step="0.5" placeholder="7.5"></label>
+        <label class="f">Screen time (hrs)<input id="ciScreen" type="number" inputmode="decimal" step="0.5" placeholder="1.5"></label>
+      </div>
+      <label class="f">What happened today<textarea id="ciWhat" placeholder="Woke at 7:40, did push day, football at 6, ate chicken..."></textarea></label>
+      <label class="f">Biggest win<input id="ciWin" placeholder="Did 32 push-ups in one set"></label>
+      <label class="f">Where I slipped<input id="ciSlip" placeholder="2 hrs of TV after lunch"></label>
+      <div class="btns"><button class="btn" id="ciSave">Save + copy for Claude</button></div>
+      <div class="copybox" id="ciOut" hidden></div>
+    </div>
+
+    <div class="card amber" id="passCard">
+      <h3>Can't do today?</h3>
+      <p class="muted">1 pass per week, Monday to Sunday. Using it protects your streak, but tomorrow you owe a make-up: 20 extra minutes of today's workout.</p>
+      <button class="btn ghost sm" id="passBtn">Use this week's pass</button>
+      <p class="muted" id="passMsg" hidden>Tap again to confirm.</p>
+    </div>
+
+    <div class="card">
+      <h3>When the brain says "tomorrow"</h3>
+      <ul class="plain">
+        <li>Do the warm-up only. 5 minutes. You can stop after. You won't.</li>
+        <li>Shoes on first, decide later.</li>
+        <li>TV only after the workout box is ticked.</li>
+        <li>Missed a day? Serve it, then never miss two.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- TRAIN -->
+  <section id="tab-train" hidden>
+    <h2>Train</h2>
+    <div class="card lime">
+      <h3>The target: big, lean, athletic</h3>
+      <p>The VXS-style aesthetic look. It comes from training these in this order:</p>
+      <ul class="plain">
+        <li><b>Shoulders, side delts.</b> Width. The biggest single thing for looking big in a T-shirt.</li>
+        <li><b>Lats.</b> Wide back, the V-taper.</li>
+        <li><b>Upper chest.</b> Full chest that shows in a shirt.</li>
+        <li><b>Arms.</b> Triceps are two thirds of the arm.</li>
+        <li><b>Abs.</b> Trained, then revealed by getting lean in the Define phase.</li>
+        <li><b>Legs.</b> Athletic, so you're not top-heavy. Football fixes the rest.</li>
+      </ul>
+      <p class="muted">Same idea as his, built your way: lateral raises almost every upper day, pull-ups every week, abs 3 times a week, sprints for the athletic part.</p>
+    </div>
+    <div class="seg" id="equipSeg" style="grid-template-columns:1fr 1fr">
+      <button data-eq="home">Home / no gym</button><button data-eq="gym">Gym</button>
+    </div>
+    <p class="muted" id="equipNote"></p>
+    <div class="chips" id="trainPick"></div>
+    <div class="card" id="workoutHead"></div>
+    <div class="list" id="exList"></div>
+    <div class="card" id="makeup" hidden></div>
+    <div class="card">
+      <h3>Posture, 5 min daily</h3>
+      <p class="muted">You're already tall. Bad posture hides it. This makes the height and shoulders show.</p>
+      <table>
+        <tr><td><b>Wall angels</b><br><span class="muted">Back flat on wall, slide arms up and down</span></td><td class="r">2 × 10</td></tr>
+        <tr><td><b>Chin tucks</b><br><span class="muted">Pull head straight back, double chin</span></td><td class="r">2 × 10</td></tr>
+        <tr><td><b>Doorway chest stretch</b><br><span class="muted">Forearm on door frame, lean through</span></td><td class="r">2 × 30s</td></tr>
+        <tr><td><b>Dead hang</b><br><span class="muted">Bar, door frame or tree</span></td><td class="r">1 × max</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>My numbers</h3>
+      <p class="muted">Test every Sunday. Beat last week.</p>
+      <div class="grid2">
+        <label class="f">Push-ups, 1 set<input id="prPush" type="number" inputmode="numeric"></label>
+        <label class="f">Pull-ups / rows<input id="prPull" type="number" inputmode="numeric"></label>
+        <label class="f">Plank (sec)<input id="prPlank" type="number" inputmode="numeric"></label>
+        <label class="f">Weight (kg)<input id="prKg" type="number" inputmode="decimal" step="0.1"></label>
+      </div>
+      <button class="btn sm" id="prSave">Save numbers</button>
+      <div id="prLog" class="muted"></div>
+    </div>
+    <div class="card">
+      <h3>Rules</h3>
+      <ul class="plain">
+        <li>Rest 60 to 90 sec between sets.</li>
+        <li>Last 2 reps of every set should be hard. Too easy, add reps.</li>
+        <li>No pull-up bar: towel rows on a closed door, or table rows.</li>
+        <li>Each week add 1 to 2 reps per set. At the gym: when you hit the top of the rep range on every set, add weight next time.</li><li>Big comes from the gym. Home builds the base for the first weeks, then join a gym in the Build phase (Nov 16).</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- FUEL -->
+  <section id="tab-fuel" hidden>
+    <h2>Fuel</h2>
+    <div class="card">
+      <div class="macro"><div class="lbl">Calories<span id="kcalTxt">0 / 0</span></div><div class="bar" id="kcalBarW"><i id="kcalBar"></i></div></div>
+      <div class="macro"><div class="lbl">Protein<span id="proTxt">0 / 0 g</span></div><div class="bar" id="proBarW"><i id="proBar"></i></div></div>
+      <p class="muted" id="fuelHint"></p>
+    </div>
+    <h3>Log what you ate (today)</h3>
+    <input id="foodSearch" placeholder="Search food: roti, egg, paneer...">
+    <div class="list" id="foodList"></div>
+    <details class="card">
+      <summary>Add something not in the list</summary>
+      <div class="grid2">
+        <label class="f" style="grid-column:1/-1">Food<input id="cName" placeholder="Chicken roll"></label>
+        <label class="f">Calories<input id="cKcal" type="number" inputmode="numeric"></label>
+        <label class="f">Protein (g)<input id="cPro" type="number" inputmode="numeric"></label>
+      </div>
+      <button class="btn sm" id="cAdd">Add to today</button>
+    </details>
+
+    <details class="card" open>
+      <summary>My targets calculator</summary>
+      <div class="grid2">
+        <label class="f">Height (cm)<input id="pH" type="number" inputmode="numeric"></label>
+        <label class="f">Weight (kg)<input id="pW" type="number" inputmode="decimal" step="0.1"></label>
+        <label class="f">Age<input id="pA" type="number" inputmode="numeric"></label>
+        <label class="f">Activity<select id="pAct">
+          <option value="1.375">Light (workout only)</option>
+          <option value="1.55">Active (workout + steps)</option>
+          <option value="1.725">Very active (workout + sport)</option>
+        </select></label>
+        <label class="f" style="grid-column:1/-1">Goal<select id="pGoal">
+          <option value="300">Lean muscle gain (+300 kcal)</option>
+          <option value="500">Faster gain (+500 kcal)</option>
+          <option value="0">Maintain and define</option>
+        </select></label>
+      </div>
+      <table id="calcOut"></table>
+      <p class="muted">Gain 0.25 to 0.5 kg a week. Faster than that is mostly fat. Not gaining after 2 weeks? Add 200 kcal.</p>
+    </details>
+
+    <details class="card">
+      <summary>Daily meal template</summary>
+      <table>
+        <tr><td><b>8:00 Light start</b><br><span class="muted">Banana, glass of milk, handful of peanuts</span></td><td class="r">~15g</td></tr>
+        <tr><td><b>11:00 Snack</b><br><span class="muted">2 boiled eggs or curd + fruit</span></td><td class="r">~12g</td></tr>
+        <tr><td><b>1:30 Lunch</b><br><span class="muted">Rice or 3 roti, dal, curd, sabzi, chicken or paneer</span></td><td class="r">~30g</td></tr>
+        <tr><td><b>5:30 After workout</b><br><span class="muted">Protein shake in milk, creatine 5g, banana</span></td><td class="r">~32g</td></tr>
+        <tr><td><b>8:30 Dinner</b><br><span class="muted">3–4 roti, chicken, eggs or paneer bhurji, salad</span></td><td class="r">~35g</td></tr>
+        <tr><td><b>10:30 Before bed</b><br><span class="muted">Milk or curd</span></td><td class="r">~8g</td></tr>
+      </table>
+    </details>
+    <div class="card">
+      <h3>Rules</h3>
+      <ul class="plain">
+        <li>Protein in every meal. Mornings light, heavier later.</li>
+        <li>Creatine 5g every day, same time. Drink 3 litres of water.</li>
+        <li>Skip cold drinks, chips and packaged sweets. One cheat meal on Sunday.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- SKIN -->
+  <section id="tab-skin" hidden>
+    <h2>Skin</h2>
+    <p class="muted">Tick here. When both AM and PM are done, the Skin box on Today ticks itself.</p>
+    <h3>Morning</h3>
+    <div class="list" id="skinAm"></div>
+    <h3>Night</h3>
+    <div class="list" id="skinPm"></div>
+    <div class="card">
+      <h3>Face icing, the right way</h3>
+      <ul class="plain">
+        <li>Wrap 3 to 4 ice cubes in a thin cloth. Never bare ice on skin.</li>
+        <li>Slow circles: forehead, under eyes, cheeks, jaw. 1 to 2 minutes total.</li>
+        <li>Or: bowl of ice water, dip face 10 seconds, 3 times.</li>
+        <li>Best in the morning. Cuts puffiness, makes skin look tighter.</li>
+      </ul>
+    </div>
+    <div class="card amber">
+      <h3>Cold shower / ice bath</h3>
+      <ul class="plain">
+        <li>Cold shower, 2 to 3 min: great for waking up and mood.</li>
+        <li>Don't do an ice bath right after strength training. It can blunt muscle growth. Keep 4+ hours gap, or do it on rest and sport days.</li>
+        <li>Start with 30 seconds cold at the end of a normal shower and build up.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>For the bike tan</h3>
+      <ul class="plain">
+        <li>SPF 50 before every ride. Reapply if out for 3+ hours.</li>
+        <li>Full-sleeve riding gloves and a buff for the neck.</li>
+        <li>Gentle scrub only 2 times a week. More makes it worse.</li>
+        <li>Tan fades in 4 to 8 weeks if you stop adding to it.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Look sharp</h3>
+      <ul class="plain">
+        <li>Haircut every 3 to 4 weeks. Beard line clean.</li>
+        <li>Lip balm daily. Nails short.</li>
+        <li>Sleep 7.5 hrs and water: the cheapest skincare there is.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- VOICE -->
+  <section id="tab-voice" hidden>
+    <h2>Voice</h2>
+    <p class="muted">15 minutes, out loud. Tick all three and Voice on Today ticks itself.</p>
+    <div class="card" id="voiceCard"></div>
+    <div class="list" id="voiceSteps"></div>
+    <div class="card">
+      <h3>Speaking rules</h3>
+      <ul class="plain">
+        <li>Slow down by 20%. Clear beats fast.</li>
+        <li>Finish every word ending. "Going", not "goin".</li>
+        <li>Replace "like" and "basically" with a one-second pause.</li>
+        <li>Look at people when you talk. Chin level, chest open.</li>
+      </ul>
+    </div>
+    <details class="card">
+      <summary>All words learned so far</summary>
+      <div id="allWords"></div>
+    </details>
+  </section>
+
+  <!-- ME -->
+  <section id="tab-me" hidden>
+    <h2>Plan</h2>
+    <div class="seg" id="modeSeg">
+      <button data-mode="auto">Auto</button><button data-mode="break">Break day</button><button data-mode="college">College day</button>
+    </div>
+    <p class="muted" id="modeNote"></p>
+    <h3 id="ttTitle">Today's timetable</h3>
+    <div class="list tt" id="timetable"></div>
+    <p class="muted">Tick each block when it's done. Red means the block passed and you skipped it. +5 XP per block.</p>
+
+    <h3>The roadmap</h3>
+    <div class="list road" id="roadmap"></div>
+
+    <div class="card lime">
+      <h3>Why I'm doing this</h3>
+      <p class="big">"I'm not doing this for anyone. I'm doing this to show myself. Unrecognizable."</p>
+      <p class="muted">Athletic, defined, lean. Good posture, sharp skin, clear voice.</p>
+    </div>
+    <div class="card hot">
+      <h3>The punishment list</h3>
+      <p class="muted">Every missed day picks one. 2 misses in a week, you serve two.</p>
+      <ul class="plain" id="punList"></ul>
+    </div>
+    <div class="card">
+      <h3>How to lock your phone (Android)</h3>
+      <ul class="plain">
+        <li>Settings, Digital Wellbeing, Dashboard.</li>
+        <li>Tap Instagram, YouTube and your game. Set timer to 5 min.</li>
+        <li>Keep it for 24 hours, then you can remove it.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Backup</h3>
+      <p class="muted">Your progress lives in this phone's browser. Copy a backup every Sunday and paste it in your notes.</p>
+      <div class="btns"><button class="btn sm" id="bkCopy">Copy backup</button><button class="btn ghost sm" id="bkShow">Restore</button></div>
+      <div id="bkRestore" hidden style="display:flex;flex-direction:column;gap:8px">
+        <textarea id="bkIn" placeholder="Paste backup code here"></textarea>
+        <button class="btn sm" id="bkLoad">Restore from code</button>
+      </div>
+      <button class="btn ghost sm" id="resetBtn">Reset everything</button>
+      <p class="muted" id="resetMsg" hidden>Tap again to wipe all progress.</p>
+    </div>
+  </section>
+</div>
+
+<nav role="tablist" id="nav">
+  <button role="tab" data-tab="today" aria-selected="true">Today</button>
+  <button role="tab" data-tab="train" aria-selected="false">Train</button>
+  <button role="tab" data-tab="fuel" aria-selected="false">Fuel</button>
+  <button role="tab" data-tab="skin" aria-selected="false">Skin</button>
+  <button role="tab" data-tab="voice" aria-selected="false">Voice</button>
+  <button role="tab" data-tab="me" aria-selected="false">Plan</button>
+</nav>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ---------- state ---------- */
+const START = new Date(2026, 9, 17);
+const KEY = "rono-comeback-v2";
+let S;
+function blank(){ return {profile:{h:185,w:65,a:22,act:"1.55",goal:"300"},days:{},served:{},mk:{},prs:[],custom:[]}; }
+try { S = JSON.parse(localStorage.getItem(KEY)) || blank(); } catch(e){ S = blank(); }
+S = Object.assign(blank(), S);
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(S)); } catch(e){} }
+
+const pad = n => String(n).padStart(2,"0");
+const keyOf = d => d.getFullYear()+"-"+pad(d.getMonth()+1)+"-"+pad(d.getDate());
+const fromKey = k => { const [y,m,d]=k.split("-").map(Number); return new Date(y,m-1,d); };
+const addDays = (d,n) => { const x=new Date(d); x.setDate(x.getDate()+n); return x; };
+const today0 = (()=>{ const n=new Date(); return new Date(n.getFullYear(),n.getMonth(),n.getDate()); })();
+const TODAY = keyOf(today0);
+const dayNo = d => Math.round((d-START)/864e5)+1;
+let selKey = TODAY < keyOf(START) ? keyOf(START) : TODAY;
+const D = k => (S.days[k] = S.days[k] || {q:{},ex:{},food:{},skin:{},voice:{},ci:{}});
+
+function toast(t){ const el=document.getElementById("toast"); el.textContent=t; el.classList.add("show"); clearTimeout(toast.t); toast.t=setTimeout(()=>el.classList.remove("show"),1800); }
+async function copy(text){ try { await navigator.clipboard.writeText(text); return true; } catch(e){ return false; } }
+
+/* ---------- content ---------- */
+const QUESTS = [
+  {t:"Up by 7:30",d:"No snooze. Water, then 5 min of sunlight."},
+  {t:"Workout done",d:"Ticks itself when every exercise in Train is done.",auto:"ex"},
+  {t:"10,000 steps",d:"Walk after lunch and after dinner."},
+  {t:"Protein target hit",d:"Ticks itself from the Fuel log.",auto:"pro"},
+  {t:"3 litres water + creatine",d:"One bottle by noon, one by 5, one by bed."},
+  {t:"Skincare AM + PM",d:"Ticks itself from the Skin tab.",auto:"skin"},
+  {t:"Voice drill",d:"Ticks itself from the Voice tab.",auto:"voice"},
+  {t:"Screens under 1.5 hrs",d:"TV + games + reels. After the workout only."},
+  {t:"In bed by 12:30 last night",d:"Tick this in the morning."},
+  {t:"Night check-in sent",d:"Ticks itself when you save the check-in.",auto:"ci"}
+];
+
+const W = {
+  push:{name:"Push",focus:"Chest, shoulders, triceps",items:[
+    ["Warm-up","Arm circles, 20 jumping jacks, 10 slow push-ups","5 min"],
+    ["Push-ups","Chest to floor, full lockout","4 × max"],
+    ["Pike push-ups","Hips high, head between hands","3 × 8–12"],
+    ["Decline push-ups","Feet on sofa or bed","3 × 10–15"],
+    ["Bottle lateral raises","Water bottles or bag, arms out to the side, slow","4 × 15–20"],
+    ["Chair dips","Elbows back, go deep","3 × 12–15"],
+    ["Diamond push-ups","Hands together under chest","2 × max"],
+    ["Plank","Squeeze everything","3 × 45s"]]},
+  pull:{name:"Pull",focus:"Back, biceps, grip",items:[
+    ["Warm-up","Shoulder rolls, band or towel pull-aparts","5 min"],
+    ["Pull-ups or towel rows","Full stretch at the bottom","4 × max"],
+    ["Table rows","Under a sturdy table, chest to edge","3 × 10–15"],
+    ["Backpack rows","Bag full of books, one arm","3 × 12 each"],
+    ["Backpack curls","3 seconds down","3 × 12–15"],
+    ["Superman hold","Face down, lift arms and legs","3 × 30s"],
+    ["Dead hang","As long as you can","2 × max"]]},
+  legs:{name:"Legs",focus:"Quads, glutes, hamstrings, calves",items:[
+    ["Warm-up","Bodyweight squats, leg swings","5 min"],
+    ["Squats","Slow down, fast up","4 × 20"],
+    ["Bulgarian split squats","Back foot on sofa","3 × 10 each"],
+    ["Walking lunges","Long steps","3 × 20 steps"],
+    ["Glute bridges","2 sec squeeze at top","3 × 15"],
+    ["Calf raises","On a step, full stretch","3 × 20"],
+    ["Wall sit","Thighs parallel","2 × 45s"]]},
+  run:{name:"Run + Abs",focus:"Stamina, abs, football fitness",items:[
+    ["Easy jog","Conversation pace","10 min"],
+    ["Sprints","20s hard, 60s walk","8 rounds"],
+    ["Cool-down walk","Nose breathing","5 min"],
+    ["Leg raises","Lying or hanging, slow","3 × 12"],
+    ["Bicycle crunches","Elbow to opposite knee","3 × 20"],
+    ["Side plank","Each side","3 × 30s"],
+    ["Mountain climbers","Fast","3 × 30s"]]},
+  upper:{name:"Upper Pump",focus:"Arms and shoulders, the look",items:[
+    ["Warm-up","Jumping jacks, arm circles","5 min"],
+    ["Push-ups","Medium tempo","3 × max"],
+    ["Pull-ups or towel rows","Slow down","3 × max"],
+    ["Pike push-ups","Head to floor","3 × 10"],
+    ["Backpack curls","Squeeze at top","3 × 15"],
+    ["Close push-ups","Elbows tight","3 × 12"],
+    ["Backpack shoulder raises","Arms out to sides","3 × 15"]]},
+  sport:{name:"Play",focus:"Active fun day",items:[
+    ["Football, badminton or pickleball","Call people in the morning, book a court","60+ min"],
+    ["If nobody's free","3 km run or long ride + walk","45 min"],
+    ["Stretch after","Hamstrings, hips, chest","10 min"]]},
+  rest:{name:"Rest + Test",focus:"Recover. Test your numbers.",items:[
+    ["Long walk","Outside, first 10 min no earphones","45 min"],
+    ["Test your numbers","Max push-ups, pull-ups, plank. Log in My numbers","10 min"],
+    ["Full body stretch","Hips, hamstrings, back, shoulders","15 min"]]}
+};
+const SPLIT = ["rest","push","pull","legs","run","upper","sport"]; // Sun..Sat
+const W_GYM = {
+  push:{name:"Push",focus:"Upper chest, shoulders, triceps",items:[
+    ["Warm-up","5 min bike + 2 light sets of incline press","8 min"],
+    ["Incline dumbbell press","Upper chest first, while fresh","4 × 8–10"],
+    ["Flat bench press","Control down, drive up","3 × 6–8"],
+    ["Seated dumbbell shoulder press","Don't lock out hard","3 × 8–10"],
+    ["Lateral raises","Light, strict, slow down. Width.","4 × 12–15"],
+    ["Cable or pec-deck fly","Squeeze 1 sec","3 × 12–15"],
+    ["Rope pushdowns","Elbows pinned","3 × 10–12"],
+    ["Overhead cable extension","Big stretch","3 × 10–12"]]},
+  pull:{name:"Pull",focus:"Lats, upper back, biceps",items:[
+    ["Warm-up","Light pulldowns, band pull-aparts","5 min"],
+    ["Pull-ups (assisted if needed)","Full hang, chest up","4 × 6–10"],
+    ["Lat pulldown, wide","Pull elbows to hips","3 × 10–12"],
+    ["Seated cable row","Chest tall, squeeze back","3 × 10"],
+    ["Single-arm dumbbell row","Big stretch at bottom","3 × 10 each"],
+    ["Face pulls","Shoulder health, rear delts","3 × 15"],
+    ["Barbell or EZ curl","No swinging","3 × 8–10"],
+    ["Hammer curls","Arm thickness","3 × 12"]]},
+  legs:{name:"Legs + Abs",focus:"Athletic legs, core",items:[
+    ["Warm-up","5 min bike, bodyweight squats","8 min"],
+    ["Back squat","Depth before weight","4 × 6–8"],
+    ["Romanian deadlift","Hips back, feel the hamstrings","3 × 8–10"],
+    ["Leg press","Feet mid-platform","3 × 10–12"],
+    ["Leg curl","Slow down","3 × 12"],
+    ["Standing calf raise","Pause at the bottom","4 × 12–15"],
+    ["Hanging leg raises","No swing","3 × 10–15"],
+    ["Cable crunch","Round the spine, crunch down","3 × 12–15"]]},
+  run:{name:"Run + Abs",focus:"Conditioning, athletic look",items:[
+    ["Treadmill or ground jog","Easy pace","10 min"],
+    ["Sprints","20s hard, 60s walk","8 rounds"],
+    ["Incline walk","12 incline, steady","10 min"],
+    ["Ab wheel or plank walkouts","Slow","3 × 10"],
+    ["Bicycle crunches","Elbow to knee","3 × 20"],
+    ["Side plank","Each side","3 × 30s"]]},
+  upper:{name:"Upper Aesthetic",focus:"The V-taper day: shoulders, lats, arms",items:[
+    ["Warm-up","Band work, light raises","5 min"],
+    ["Incline smith or machine press","Upper chest","3 × 8–10"],
+    ["Pull-ups or close-grip pulldown","Lats","3 × 8–10"],
+    ["Lateral raises, then drop set","Last set: drop weight twice, go to failure","5 × 12–15"],
+    ["Rear delt fly","Back of the shoulder, 3D look","3 × 15"],
+    ["Incline dumbbell curl","Stretch the bicep","3 × 10–12"],
+    ["Dips or close-grip bench","Triceps mass","3 × 8–10"],
+    ["Rope pushdown burnout","One set, max reps","1 × max"]]},
+  sport:W.sport,
+  rest:W.rest
+};
+function equip(){ return S.equip==="gym"?"gym":"home"; }
+
+const FOODS = [
+  ["Roti",1,"1 roti",100,3],["Rice",1,"1 cup cooked",200,4],["Dal",1,"1 bowl",180,10],["Curd",1,"1 cup",100,8],
+  ["Milk",1,"1 glass",150,8],["Boiled egg",1,"1 egg",75,6],["Omelette",1,"2 eggs",200,12],["Chicken curry",1,"1 bowl",300,30],
+  ["Chicken breast",1,"100 g",165,31],["Paneer",1,"100 g",290,18],["Soya chunks",1,"50 g dry",170,26],["Rajma / chole",1,"1 bowl",220,10],
+  ["Protein shake",1,"1 scoop, water",120,24],["Banana",1,"1",105,1],["Peanuts",1,"handful",170,7],["Peanut butter",1,"1 tbsp",95,4],
+  ["Bread",1,"1 slice",75,3],["Oats",1,"40 g",150,5],["Idli",1,"1",60,2],["Dosa",1,"1 plain",170,4],
+  ["Poha",1,"1 plate",250,5],["Upma",1,"1 plate",250,6],["Sambar",1,"1 bowl",130,6],["Veg sabzi",1,"1 bowl",120,3],
+  ["Fish curry",1,"1 bowl",250,25],["Mutton curry",1,"1 bowl",350,25],["Biryani",1,"1 plate",550,20],["Apple",1,"1",95,0],
+  ["Chips",1,"small pack",270,3],["Cold drink",1,"300 ml",130,0],["Sweet",1,"1 piece",150,2],["Maggi",1,"1 pack",350,8]
+];
+
+const SKIN_AM = [["Face wash","Gentle, lukewarm water"],["Ice the face","1–2 min in a cloth, see below"],["Moisturiser","Light gel type"],["Sunscreen SPF 50","Before you step out or ride"]];
+const SKIN_PM = [["Face wash","Get the sunscreen and dust off"],["Moisturiser","Slightly thicker at night"],["Lip balm",""],["Scrub (Wed + Sun only)","Gentle, 30 seconds. Skip other days, still tick"]];
+
+const VOICE = [
+  {topic:"Describe your perfect day, start to finish.",words:[["Resilient","bounces back after trouble"],["Candid","honest and direct"],["Meticulous","very careful with detail"],["Diligent","hard-working and steady"],["Articulate","speaks clearly and well"]]},
+  {topic:"Commentate your favourite football moment.",words:[["Tenacious","does not give up"],["Pivotal","a turning point"],["Lethargic","slow, no energy"],["Formidable","strong, impressive"],["Momentum","force that keeps things moving"]]},
+  {topic:"Sell your bike to a stranger in 2 minutes.",words:[["Compelling","makes you want to agree"],["Versatile","good at many things"],["Robust","strong, hard to break"],["Leverage","use something to your advantage"],["Pragmatic","practical, what works"]]},
+  {topic:"What would you change about your college?",words:[["Advocate","speak up in support of"],["Mundane","boring, ordinary"],["Constructive","helpful, aimed at improving"],["Feasible","possible to do"],["Ambivalent","mixed feelings"]]},
+  {topic:"Teach someone how to do a perfect push-up.",words:[["Concise","short and clear"],["Precise","exact"],["Fundamental","basic and essential"],["Incremental","in small steps"],["Elaborate","explain in more detail"]]},
+  {topic:"Tell the story of your best trip.",words:[["Exhilarating","very exciting"],["Serene","calm, peaceful"],["Spontaneous","without planning"],["Vivid","bright and clear"],["Nostalgic","missing good past times"]]},
+  {topic:"Why do people procrastinate and how do you beat it?",words:[["Procrastinate","delay what you should do"],["Inertia","tendency to stay as you are"],["Discipline","doing it without mood"],["Catalyst","something that starts change"],["Consistent","same, again and again"]]},
+  {topic:"Introduce yourself in a job interview.",words:[["Proactive","acts before being told"],["Adaptable","adjusts easily"],["Accountable","owns the results"],["Initiative","starting things yourself"],["Composed","calm under pressure"]]},
+  {topic:"Review the last movie or series you watched.",words:[["Captivating","holds your attention"],["Predictable","easy to guess"],["Profound","deep, meaningful"],["Mediocre","just average"],["Riveting","impossible to look away"]]},
+  {topic:"Argue: should phones be banned in class?",words:[["Counterargument","a point against yours"],["Substantial","large, important"],["Detrimental","harmful"],["Nuanced","subtle differences"],["Conclusive","settles the question"]]},
+  {topic:"Explain how to cook your favourite dish.",words:[["Savoury","salty or spicy, not sweet"],["Aromatic","smells strong and good"],["Simmer","cook gently just below boiling"],["Garnish","decorate food"],["Palatable","pleasant to eat"]]},
+  {topic:"Describe someone you look up to.",words:[["Charismatic","naturally attracts people"],["Humble","does not show off"],["Integrity","doing right when no one sees"],["Inspiring","makes you want to act"],["Steadfast","firm, loyal"]]},
+  {topic:"What does being disciplined mean to you?",words:[["Sacrifice","giving up something for more"],["Habitual","done regularly"],["Unwavering","does not shake"],["Gratification","feeling of pleasure"],["Self-reliant","depends on himself"]]},
+  {topic:"Talk to the old lazy you. What changed?",words:[["Transformation","a complete change"],["Unrecognizable","changed beyond knowing"],["Relentless","never stopping"],["Gratitude","being thankful"],["Evolve","grow step by step"]]}
+];
+const VSTEPS = [["Read aloud, 5 min","Any news article. Slow, mouth open, every word ending."],["Talk on the topic, 2 min","Record on your phone. Play it back once. Note one fix."],["Learn the 5 words","Say each word, its meaning, then your own sentence out loud."]];
+
+const PUNISH = [
+  "24-hour phone lock: Instagram, YouTube and games set to 5 min in Digital Wellbeing.",
+  "Zero TV and games tomorrow. Not one minute.",
+  "100 burpees tomorrow before breakfast, any number of sets.",
+  "3 minute fully cold shower tomorrow morning.",
+  "Wake at 6:30 tomorrow, not 7:30.",
+  "3 km run tomorrow morning, on top of the normal workout.",
+  "Phone goes in another room from 8 pm tomorrow.",
+  "Clean your whole room and do the family's dishes tomorrow.",
+  "Message a friend: 'I skipped yesterday, check on me tonight.'",
+  "Double voice drill tomorrow: 30 min."
+];
+
+const TT = {
+  break:[
+    ["07:30","08:00","Wake up","Water, 5 min sunlight, ice the face"],
+    ["08:00","08:30","Breakfast + skin AM","Light start, sunscreen on"],
+    ["08:30","08:45","Voice drill","Read aloud, 2 min talk, 5 words"],
+    ["08:45","09:00","Posture + plan","5 min posture routine, look at today's workout"],
+    ["09:00","11:00","Deep block","Learn a skill, read, college prep, help at home. Phone in another room."],
+    ["11:00","11:15","Snack","2 eggs or curd + fruit"],
+    ["11:15","13:30","Out + errands","Walk, chores, meet someone. Not the sofa."],
+    ["13:30","14:30","Lunch + walk","Big protein meal, then 15 min walk"],
+    ["14:30","16:00","Screen time","TV or games allowed. Max 1.5 hrs, then off."],
+    ["16:00","16:30","Get ready","Banana, gym clothes, water bottle"],
+    ["16:30","17:30","Workout","Today's session from Train"],
+    ["17:30","18:00","Shake + shower","Protein shake, creatine 5g"],
+    ["18:00","20:30","Go out","Ground, friends, ride, sport"],
+    ["20:30","21:30","Dinner","With family, phone face down"],
+    ["21:30","22:30","Wind down","Light stretch, read, lay out tomorrow's clothes"],
+    ["22:30","23:00","Night check-in","Fill it, send to Claude, skin PM"],
+    ["23:00","24:00","Lights low","Phone away by 12. Asleep by 12:30."]
+  ],
+  college:[
+    ["06:45","07:15","Wake + skin AM","Water, ice the face, sunscreen"],
+    ["07:15","07:30","Voice drill","Read aloud while getting ready"],
+    ["07:30","08:15","Breakfast + leave","Light start, leave on time"],
+    ["08:15","15:30","College","Eat a proper lunch, carry eggs or peanuts. Take the stairs."],
+    ["15:30","16:30","Home + snack","Snack and rest. No sofa scrolling."],
+    ["16:30","17:30","Workout","Today's session from Train"],
+    ["17:30","18:00","Shake + shower","Protein shake, creatine 5g"],
+    ["18:00","19:30","Out or sport","Ground, friends, walk"],
+    ["19:30","20:30","Study","College work, phone away"],
+    ["20:30","21:30","Dinner","With family, phone face down"],
+    ["21:30","22:30","Screen time","Max 1 hr"],
+    ["22:30","23:00","Night check-in","Fill it, send to Claude, skin PM"],
+    ["23:00","24:00","Lights low","Phone away by 12. Asleep by 12:30."]
+  ]
+};
+const ROAD_NOTES = [
+  "Kick-off. Play or a 3 km run. Write down how you feel tonight.",
+  "Test day. Max push-ups, pull-ups, plank. Weigh in. Front and side photo.",
+  "First real push day. Hit your protein target for the first time.",
+  "Pull day. Soreness is normal, walk it off.",
+  "Legs. The one everyone skips. Don't.",
+  "Run + abs. Count your sprint rounds.",
+  "Upper pump. Arms and shoulders.",
+  "Play day. Go out with people.",
+  "Week 1 test. Beat Day 2's numbers. Same photo again.",
+  "Push. Add 2 reps to every set vs last Monday.",
+  "Last break day. Pull, then set up the college routine."
+];
+const PHASES = [
+  ["2026-10-28","2026-11-15","Oct 28","Foundation","Same split around college. Perfect form, every rep. Aim +1 kg."],
+  ["2026-11-16","2026-12-13","Nov 16","Build","Harder moves: archer push-ups, pistol squat steps, or join a gym. Aim +2 kg."],
+  ["2026-12-14","2027-01-13","Dec 14","Define","More sprints, protein every meal, cut the junk fully. Lines start showing."],
+  ["2027-01-14","2027-01-14","Jan 14","Day 90 reveal","Same photo, same light as Day 2. Put them side by side."]
+];
+function modeFor(k){ const m=S.mode||"auto"; if(m!=="auto") return m; return k<="2026-10-27"?"break":"college"; }
+const toMin = s => { const [h,m]=s.split(":").map(Number); return h*60+m; };
+const fmtT = s => { let [h,m]=s.split(":").map(Number); if(h===24) return "12:00 am"; const ap=h>=12?"pm":"am"; h=h%12||12; return h+":"+String(m).padStart(2,"0")+" "+ap; };
+const nowMin = () => { const n=new Date(); return n.getHours()*60+n.getMinutes(); };
+const RANKS = [["Sofa",0],["Starter",300],["Grinder",1200],["Athlete",3000],["Machine",6000],["Unrecognizable",10000]];
+
+/* ---------- calculations ---------- */
+function targets(){
+  const p=S.profile, h=+p.h||185, w=+p.w||65, a=+p.a||22;
+  const bmr = 10*w + 6.25*h - 5*a + 5;
+  const tdee = bmr*(+p.act||1.55);
+  const kcal = Math.round((tdee + (+p.goal||0))/50)*50;
+  const pro = Math.round(w*2);
+  return {bmr:Math.round(bmr),tdee:Math.round(tdee),kcal,pro,water:Math.max(3,Math.round(w*0.045*10)/10)};
+}
+function foodTotals(k){
+  const day=S.days[k]; let kc=0,pr=0; if(!day) return {kc,pr};
+  for(const id in day.food){ const n=day.food[id]; let f;
+    if(id.startsWith("c")){ f=(day.customFoods||[]).find(x=>x.id===id); if(f){kc+=f.kcal*n;pr+=f.pro*n;} }
+    else { f=FOODS[+id]; if(f){kc+=f[3]*n;pr+=f[4]*n;} } }
+  return {kc,pr};
+}
+function workoutFor(k){ return (equip()==="gym"?W_GYM:W)[SPLIT[fromKey(k).getDay()]]; }
+function autoState(k){
+  const day=S.days[k]||{}; const w=workoutFor(k);
+  const ex = w.items.every((_,i)=>(day.ex||{})[i]);
+  const pro = foodTotals(k).pr >= targets().pro;
+  const skin = [...SKIN_AM,...SKIN_PM].every((_,i)=>(day.skin||{})[i]);
+  const voice = VSTEPS.every((_,i)=>(day.voice||{})[i]);
+  const ci = !!(day.ci && day.ci.saved);
+  return {ex,pro,skin,voice,ci};
+}
+function questOn(k,i){ const q=QUESTS[i]; if(q.auto) return autoState(k)[q.auto]; return !!((S.days[k]||{}).q||{})[i]; }
+function score(k){ let n=0; for(let i=0;i<QUESTS.length;i++) if(questOn(k,i)) n++; return n; }
+function status(k){ // ok | pass | miss | open | future
+  if(k>TODAY) return "future";
+  const day=S.days[k];
+  if(day && day.pass) return "pass";
+  if(score(k)>=8) return "ok";
+  if(k===TODAY) return "open";
+  return "miss";
+}
+function allPastKeys(){ const out=[]; for(let d=new Date(START); keyOf(d)<TODAY; d=addDays(d,1)) out.push(keyOf(d)); return out; }
+function streakNow(){ let s=0; const st=status(TODAY); if(st==="ok"||st==="pass") s++;
+  for(let d=addDays(today0,-1); d>=START; d=addDays(d,-1)){ const x=status(keyOf(d)); if(x==="ok"||x==="pass") s++; else break; } return s; }
+function bestStreak(){ let b=0,c=0; for(let d=new Date(START); keyOf(d)<=TODAY; d=addDays(d,1)){ const x=status(keyOf(d)); if(x==="ok"||x==="pass"){c++;b=Math.max(b,c);} else if(x!=="open") c=0; } return b; }
+function weekStart(d){ const x=new Date(d); const off=(x.getDay()+6)%7; x.setDate(x.getDate()-off); return x; }
+function passUsedThisWeek(){ const ws=weekStart(today0); for(let i=0;i<7;i++){ const k=keyOf(addDays(ws,i)); if(S.days[k]&&S.days[k].pass) return k; } return null; }
+function xp(){ let t=0; for(const k in S.days){ if(k>TODAY) continue; t+=score(k)*10; const s=status(k); if(s==="ok") t+=50; if(S.days[k].ci&&S.days[k].ci.saved) t+=20; t+=Object.values(S.days[k].tt||{}).filter(Boolean).length*5; }
+  for(const k in S.served) t+=30; return t; }
+function punishmentsFor(k){ const n=dayNo(fromKey(k)); const ws=weekStart(fromKey(k));
+  let misses=0; for(let i=0;i<7;i++){ const kk=keyOf(addDays(ws,i)); if(kk<=k && status(kk)==="miss") misses++; }
+  const a=PUNISH[(n*7)%PUNISH.length]; const out=[a]; if(misses>=2) out.push(PUNISH[(n*7+3)%PUNISH.length]); return out; }
+
+/* ---------- render: header ---------- */
+function renderHeader(){
+  const n=dayNo(today0);
+  document.getElementById("dayNum").textContent = n<1?0:n;
+  document.getElementById("dateline").textContent = today0.toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"short"}) + (today0<=new Date(2026,9,27)?" · break lock-in":" · college mode");
+  const sc=score(selKey);
+  const msg = n<1 ? "Starts tomorrow, Sat Oct 17. Tonight: shoes by the door, 7:30 alarm, remote in another room."
+    : "Today: "+workoutFor(TODAY).name+". "+(score(TODAY)>=8?"Day won. Keep stacking.":(8-score(TODAY))+" more to save the day.");
+  document.getElementById("dayMsg").textContent=msg;
+  document.getElementById("sToday").textContent=score(TODAY)+"/10";
+  document.getElementById("todayBar").style.width=(score(TODAY)*10)+"%";
+  document.getElementById("sStreak").textContent=streakNow();
+  document.getElementById("sBest").textContent=bestStreak();
+  document.getElementById("sPass").textContent=passUsedThisWeek()?0:1;
+  const x=xp(); let r=0; RANKS.forEach((rk,i)=>{ if(x>=rk[1]) r=i; });
+  const next=RANKS[r+1];
+  document.getElementById("rankName").textContent=RANKS[r][0];
+  document.getElementById("rankXp").textContent = x+" XP"+(next?" · "+(next[1]-x)+" to "+next[0]:"");
+  document.getElementById("rankBar").style.width = next ? ((x-RANKS[r][1])/(next[1]-RANKS[r][1])*100)+"%" : "100%";
+  const wk=document.getElementById("week"); wk.innerHTML="";
+  const ws=weekStart(today0);
+  ["M","T","W","T","F","S","S"].forEach((l,i)=>{ const d=addDays(ws,i), k=keyOf(d);
+    const st = d<START ? "future" : status(k);
+    const cls = st==="ok"?"ok":st==="pass"?"pass":st==="miss"?"miss":"";
+    const sym = st==="ok"?"✓":st==="pass"?"P":st==="miss"?"✕":(st==="open"?score(k):"");
+    wk.insertAdjacentHTML("beforeend",'<div><i class="'+cls+(k===TODAY?" now":"")+'">'+sym+'</i>'+l+'</div>'); });
+}
+
+/* ---------- render: today ---------- */
+function renderDebts(){
+  const el=document.getElementById("debts"); el.innerHTML="";
+  const yk=keyOf(addDays(today0,-1));
+  if(S.days[yk] && S.days[yk].pass && !S.mk[TODAY]){
+    el.insertAdjacentHTML("beforeend",'<div class="card amber"><h3>Make-up owed</h3><p>You used a pass yesterday. Add 20 extra minutes of yesterday\'s session ('+workoutFor(yk).name+') today.</p><button class="btn sm" data-mk="1">Make-up done</button></div>');
+  }
+  allPastKeys().filter(k=>status(k)==="miss" && !S.served[k]).forEach(k=>{
+    const p=punishmentsFor(k);
+    el.insertAdjacentHTML("beforeend",'<div class="card hot"><h3>Missed · '+fromKey(k).toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"})+' · '+score(k)+'/10</h3><p class="big">'+p.join("<br>+ ")+'</p><p class="muted">Serve it, then tap. Honest only. Streak already reset.</p><button class="btn red sm" data-serve="'+k+'">I served it</button></div>');
+  });
+  el.querySelectorAll("[data-serve]").forEach(b=>b.onclick=()=>{ S.served[b.dataset.serve]=true; save(); toast("Debt cleared. +30 XP"); renderAll(); });
+  el.querySelectorAll("[data-mk]").forEach(b=>b.onclick=()=>{ S.mk[TODAY]=true; save(); toast("Make-up done"); renderAll(); });
+}
+function renderDayPick(){
+  const el=document.getElementById("dayPick"); el.innerHTML="";
+  const opts=[]; const t=TODAY<keyOf(START)?keyOf(START):TODAY;
+  opts.push([t, TODAY<keyOf(START)?"Day 1 · Sat":"Today"]);
+  const y=keyOf(addDays(today0,-1)); if(y>=keyOf(START) && new Date().getHours()<12) opts.push([y,"Yesterday (till noon)"]);
+  if(opts.length<2){ el.hidden=true; return; } el.hidden=false;
+  opts.forEach(([k,l])=>{ const c=document.createElement("button"); c.className="chip"; c.textContent=l; c.setAttribute("aria-pressed",k===selKey?"true":"false"); c.onclick=()=>{selKey=k;renderAll();}; el.appendChild(c); });
+}
+function renderQuests(){
+  const el=document.getElementById("quests"); el.innerHTML="";
+  document.getElementById("todayTitle").textContent = (selKey===TODAY?"Today's 10":"Day "+dayNo(fromKey(selKey))+"'s 10")+" · "+score(selKey)+"/10";
+  QUESTS.forEach((q,i)=>{
+    const on=questOn(selKey,i);
+    const b=document.createElement("button"); b.className="row"+(on?" done":"");
+    b.setAttribute("aria-pressed",on?"true":"false");
+    b.innerHTML='<span class="box">'+(on?"✓":"")+'</span><span class="grow"><span class="t">'+q.t+'</span>'+(q.auto?'<span class="auto">AUTO</span>':'')+'<span class="d">'+q.d+'</span></span><span class="tag">+10</span>';
+    b.onclick=()=>{
+      if(q.auto){ const map={ex:"train",pro:"fuel",skin:"skin",voice:"voice",ci:null}; if(map[q.auto]) go(map[q.auto]); else document.getElementById("checkin").scrollIntoView({behavior:"smooth"}); return; }
+      const d=D(selKey); d.q[i]=!d.q[i]; save(); if(d.q[i]) toast("+10 XP"); renderAll();
+    };
+    el.appendChild(b);
+  });
+}
+function scaleUI(id,field){
+  const el=document.getElementById(id); el.innerHTML="";
+  for(let i=1;i<=5;i++){ const b=document.createElement("button"); b.type="button"; b.textContent=i;
+    b.setAttribute("aria-pressed",(D(selKey).ci[field]===i)?"true":"false");
+    b.onclick=()=>{ D(selKey).ci[field]=i; save(); scaleUI(id,field); }; el.appendChild(b); }
+}
+function renderCheckin(){
+  const ci=D(selKey).ci;
+  scaleUI("ciMood","mood"); scaleUI("ciEnergy","energy");
+  [["ciSleep","sleep"],["ciScreen","screen"],["ciWhat","what"],["ciWin","win"],["ciSlip","slip"]].forEach(([id,f])=>{ const el=document.getElementById(id); el.value=ci[f]||""; el.oninput=()=>{ D(selKey).ci[f]=el.value; save(); }; });
+  const out=document.getElementById("ciOut"); if(ci.saved){ out.hidden=false; out.textContent=report(selKey); } else out.hidden=true;
+}
+function report(k){
+  const d=S.days[k]||{}, ci=d.ci||{}, t=targets(), f=foodTotals(k), w=workoutFor(k);
+  const done=QUESTS.map((q,i)=>(questOn(k,i)?"✓ ":"✕ ")+q.t).join("\n");
+  const exDone=w.items.filter((_,i)=>(d.ex||{})[i]).length;
+  return "RONO COMEBACK · Day "+dayNo(fromKey(k))+" · "+fromKey(k).toLocaleDateString("en-IN",{weekday:"short",day:"numeric",month:"short"})+"\n"+
+    "Score: "+score(k)+"/10 · Streak: "+streakNow()+" · Rank: "+document.getElementById("rankName").textContent+"\n"+
+    "Workout: "+w.name+" ("+exDone+"/"+w.items.length+" exercises)\n"+
+    "Food: "+f.kc+"/"+t.kcal+" kcal · "+f.pr+"/"+t.pro+" g protein\n"+
+    "Mood "+(ci.mood||"-")+"/5 · Energy "+(ci.energy||"-")+"/5 · Sleep "+(ci.sleep||"-")+" h · Screens "+(ci.screen||"-")+" h\n\n"+done+"\n\n"+
+    "What happened: "+(ci.what||"-")+"\nWin: "+(ci.win||"-")+"\nSlip: "+(ci.slip||"-");
+}
+document.getElementById("ciSave").onclick=async()=>{
+  D(selKey).ci.saved=true; save(); renderAll();
+  const ok=await copy(report(selKey));
+  toast(ok?"Copied. Paste it to Claude.":"Saved. Select the text below and copy.");
+};
+let passArmed=false;
+document.getElementById("passBtn").onclick=()=>{
+  const used=passUsedThisWeek();
+  if(used){ toast("Pass already used this week"); return; }
+  if(!passArmed){ passArmed=true; document.getElementById("passMsg").hidden=false; return; }
+  D(selKey).pass=true; save(); passArmed=false; document.getElementById("passMsg").hidden=true; toast("Pass used. Make-up tomorrow."); renderAll();
+};
+function renderPass(){
+  const used=passUsedThisWeek(); const btn=document.getElementById("passBtn");
+  btn.textContent = used ? (used===selKey?"Pass used for this day":"Pass used this week") : "Use this week's pass";
+  btn.disabled=!!used; btn.style.opacity=used?.5:1;
+}
+
+/* ---------- render: train ---------- */
+let trainKey=null;
+function renderTrain(){
+  if(!trainKey) trainKey=selKey;
+  document.querySelectorAll("#equipSeg button").forEach(b=>{ b.setAttribute("aria-pressed",equip()===b.dataset.eq?"true":"false");
+    b.onclick=()=>{ S.equip=b.dataset.eq; save(); renderAll(); }; });
+  document.getElementById("equipNote").textContent = equip()==="gym" ? "Gym plan. Pick weights where the last 2 reps are hard. Log your top sets in My numbers." : "Home plan: bodyweight, a backpack and water bottles. Switch to Gym the day you join.";
+  const el=document.getElementById("trainPick"); el.innerHTML="";
+  const ws=weekStart(fromKey(selKey));
+  for(let i=0;i<7;i++){ const d=addDays(ws,i), k=keyOf(d); const c=document.createElement("button"); c.className="chip";
+    c.textContent=d.toLocaleDateString("en-IN",{weekday:"short"})+" · "+workoutFor(k).name; c.setAttribute("aria-pressed",k===trainKey?"true":"false");
+    c.onclick=()=>{trainKey=k;renderTrain();}; el.appendChild(c); }
+  const w=workoutFor(trainKey); const wkNo=Math.max(1,Math.ceil(dayNo(fromKey(trainKey))/7));
+  const editable = trainKey===selKey;
+  document.getElementById("workoutHead").innerHTML='<div class="eyebrow">Week '+wkNo+' · '+fromKey(trainKey).toLocaleDateString("en-IN",{weekday:"long"})+'</div><h2 style="margin:0">'+w.name+'</h2><p class="muted">'+w.focus+'. '+(wkNo>1?"Add 1–2 reps per set vs last week.":"Find your starting numbers. Write them down.")+(editable?"":" Preview only, tick on the day.")+'</p>';
+  const list=document.getElementById("exList"); list.innerHTML="";
+  const day=S.days[trainKey]||{ex:{}};
+  w.items.forEach(([n,d,r],i)=>{
+    const on=!!(day.ex||{})[i];
+    const b=document.createElement("button"); b.className="row"+(on?" done":"")+(editable?"":" static");
+    b.innerHTML='<span class="box">'+(on?"✓":"")+'</span><span class="grow"><span class="t">'+n+'</span><span class="d">'+d+'</span></span><span class="tag">'+r+'</span>';
+    if(editable) b.onclick=()=>{ const dd=D(trainKey); dd.ex[i]=!dd.ex[i]; save();
+      if(w.items.every((_,j)=>dd.ex[j])) toast("Workout done. +10 XP"); renderAll(); };
+    list.appendChild(b);
+  });
+  renderPRs();
+}
+function renderPRs(){
+  const el=document.getElementById("prLog");
+  if(!S.prs.length){ el.textContent="No numbers yet. Test on Sunday."; return; }
+  el.innerHTML='<table>'+S.prs.slice(-6).reverse().map(p=>'<tr><td>'+p.date+'</td><td class="r">'+[p.push&&p.push+" push",p.pull&&p.pull+" pull",p.plank&&p.plank+"s",p.kg&&p.kg+" kg"].filter(Boolean).join(" · ")+'</td></tr>').join("")+'</table>';
+}
+document.getElementById("prSave").onclick=()=>{
+  const v=id=>document.getElementById(id).value;
+  const p={date:today0.toLocaleDateString("en-IN",{day:"numeric",month:"short"}),push:v("prPush"),pull:v("prPull"),plank:v("prPlank"),kg:v("prKg")};
+  if(!p.push&&!p.pull&&!p.plank&&!p.kg){ toast("Enter at least one number"); return; }
+  S.prs.push(p); if(p.kg){ S.profile.w=+p.kg; } save();
+  ["prPush","prPull","prPlank","prKg"].forEach(id=>document.getElementById(id).value=""); toast("Numbers saved"); renderAll();
+};
+
+/* ---------- render: fuel ---------- */
+function renderFuel(){
+  const t=targets(), f=foodTotals(selKey);
+  document.getElementById("kcalTxt").textContent=f.kc+" / "+t.kcal;
+  document.getElementById("proTxt").textContent=f.pr+" / "+t.pro+" g";
+  document.getElementById("kcalBar").style.width=Math.min(100,f.kc/t.kcal*100)+"%";
+  document.getElementById("proBar").style.width=Math.min(100,f.pr/t.pro*100)+"%";
+  document.getElementById("kcalBarW").classList.toggle("over",f.kc>t.kcal+300);
+  const left=t.pro-f.pr;
+  document.getElementById("fuelHint").textContent = left>0 ? left+" g protein to go. A shake + 3 eggs is about 42 g." : "Protein done. Box ticked on Today.";
+  const q=document.getElementById("foodSearch").value.trim().toLowerCase();
+  const day=D(selKey); const list=document.getElementById("foodList"); list.innerHTML="";
+  const rows=[];
+  (day.customFoods||[]).forEach(cf=>rows.push([cf.id,cf.name,"custom",cf.kcal,cf.pro]));
+  FOODS.forEach((fd,i)=>rows.push([String(i),fd[0],fd[2],fd[3],fd[4]]));
+  rows.filter(r=>!q||r[1].toLowerCase().includes(q))
+      .sort((a,b)=>(day.food[b[0]]?1:0)-(day.food[a[0]]?1:0))
+      .forEach(([id,name,serv,kc,pr])=>{
+    const n=day.food[id]||0;
+    const r=document.createElement("div"); r.className="food"+(n?" on":"");
+    r.innerHTML='<div class="grow"><div class="t" style="font-weight:600">'+name+'</div><div class="d">'+serv+' · '+kc+' kcal · '+pr+' g</div></div><div class="qty"><button aria-label="Remove one '+name+'">−</button><b>'+n+'</b><button aria-label="Add one '+name+'">+</button></div>';
+    const [minus,plus]=r.querySelectorAll("button");
+    minus.onclick=()=>{ if(day.food[id]){ day.food[id]--; if(!day.food[id]) delete day.food[id]; save(); renderAll(); } };
+    plus.onclick=()=>{ const before=foodTotals(selKey).pr; day.food[id]=(day.food[id]||0)+1; save(); if(before<t.pro && foodTotals(selKey).pr>=t.pro) toast("Protein target hit. +10 XP"); renderAll(); };
+    list.appendChild(r);
+  });
+  // calculator
+  const p=S.profile;
+  [["pH","h"],["pW","w"],["pA","a"],["pAct","act"],["pGoal","goal"]].forEach(([id,k])=>{ const el=document.getElementById(id); if(document.activeElement!==el) el.value=p[k]; el.oninput=el.onchange=()=>{ S.profile[k]=el.value; save(); renderCalc(); renderFuelBars(); }; });
+  renderCalc();
+}
+function renderFuelBars(){ const t=targets(), f=foodTotals(selKey);
+  document.getElementById("kcalTxt").textContent=f.kc+" / "+t.kcal; document.getElementById("proTxt").textContent=f.pr+" / "+t.pro+" g";
+  document.getElementById("kcalBar").style.width=Math.min(100,f.kc/t.kcal*100)+"%"; document.getElementById("proBar").style.width=Math.min(100,f.pr/t.pro*100)+"%"; }
+function renderCalc(){
+  const t=targets();
+  document.getElementById("calcOut").innerHTML=
+    '<tr><td>Body at rest burns</td><td class="r">'+t.bmr+' kcal</td></tr>'+
+    '<tr><td>With your activity</td><td class="r">'+t.tdee+' kcal</td></tr>'+
+    '<tr><td><b>Eat daily</b></td><td class="r"><b>'+t.kcal+' kcal</b></td></tr>'+
+    '<tr><td><b>Protein daily</b> (2 g per kg)</td><td class="r"><b>'+t.pro+' g</b></td></tr>'+
+    '<tr><td>Water</td><td class="r">'+t.water+' L</td></tr>';
+}
+document.getElementById("foodSearch").oninput=renderFuel;
+document.getElementById("cAdd").onclick=()=>{
+  const name=document.getElementById("cName").value.trim(), kcal=+document.getElementById("cKcal").value, pro=+document.getElementById("cPro").value||0;
+  if(!name||!kcal){ toast("Add a name and calories"); return; }
+  const day=D(selKey); day.customFoods=day.customFoods||[]; const id="c"+Date.now();
+  day.customFoods.push({id,name,kcal,pro}); day.food[id]=1; save();
+  ["cName","cKcal","cPro"].forEach(i=>document.getElementById(i).value=""); toast("Added"); renderAll();
+};
+
+/* ---------- render: skin + voice ---------- */
+function renderSkin(){
+  const day=D(selKey);
+  [["skinAm",SKIN_AM,0],["skinPm",SKIN_PM,SKIN_AM.length]].forEach(([id,arr,off])=>{
+    const el=document.getElementById(id); el.innerHTML="";
+    arr.forEach(([t,d],j)=>{ const i=off+j, on=!!day.skin[i];
+      const b=document.createElement("button"); b.className="row"+(on?" done":"");
+      b.innerHTML='<span class="box">'+(on?"✓":"")+'</span><span class="grow"><span class="t">'+t+'</span>'+(d?'<span class="d">'+d+'</span>':'')+'</span>';
+      b.onclick=()=>{ day.skin[i]=!day.skin[i]; save(); if(autoState(selKey).skin) toast("Skin done. +10 XP"); renderAll(); };
+      el.appendChild(b); });
+  });
+}
+function voiceIdx(k){ return (Math.max(1,dayNo(fromKey(k)))-1)%VOICE.length; }
+function renderVoice(){
+  const v=VOICE[voiceIdx(selKey)];
+  document.getElementById("voiceCard").innerHTML='<div class="eyebrow">Day '+Math.max(1,dayNo(fromKey(selKey)))+' · topic</div><p class="big">'+v.topic+'</p><h3>Today\'s 5 words</h3><div>'+v.words.map(([w,m])=>'<div class="word"><b>'+w+'</b><em>'+m+'</em></div>').join("")+'</div><p class="muted">Use at least 2 of them in your 2-minute talk.</p>';
+  const day=D(selKey); const el=document.getElementById("voiceSteps"); el.innerHTML="";
+  VSTEPS.forEach(([t,d],i)=>{ const on=!!day.voice[i];
+    const b=document.createElement("button"); b.className="row"+(on?" done":"");
+    b.innerHTML='<span class="box">'+(on?"✓":"")+'</span><span class="grow"><span class="t">'+t+'</span><span class="d">'+d+'</span></span>';
+    b.onclick=()=>{ day.voice[i]=!day.voice[i]; save(); if(autoState(selKey).voice) toast("Voice done. +10 XP"); renderAll(); };
+    el.appendChild(b); });
+  const upto=Math.min(VOICE.length,Math.max(1,dayNo(today0)));
+  document.getElementById("allWords").innerHTML=VOICE.slice(0,upto).flatMap(x=>x.words).map(([w,m])=>'<div class="word"><b>'+w+'</b><em>'+m+'</em></div>').join("");
+}
+
+/* ---------- render: me ---------- */
+function renderMe(){
+  document.getElementById("punList").innerHTML=PUNISH.map(p=>"<li>"+p+"</li>").join("");
+  document.querySelectorAll("#modeSeg button").forEach(b=>{ b.setAttribute("aria-pressed",(S.mode||"auto")===b.dataset.mode?"true":"false");
+    b.onclick=()=>{ S.mode=b.dataset.mode; save(); renderAll(); }; });
+  const md=modeFor(TODAY);
+  document.getElementById("modeNote").textContent = (S.mode||"auto")==="auto" ? "Auto: break timetable till Oct 27, college timetable from Oct 28." : "Using the "+md+" timetable every day. Switch back to Auto anytime.";
+  renderTimetable(); renderRoad();
+}
+function renderTimetable(){
+  const k=TODAY<keyOf(START)?keyOf(START):TODAY;
+  const tt=TT[modeFor(k)], day=D(k), m=nowMin(), live=(k===TODAY);
+  day.tt=day.tt||{};
+  document.getElementById("ttTitle").textContent=(live?"Today's timetable":"Day 1 timetable")+" · "+(modeFor(k)==="break"?"break day":"college day");
+  const el=document.getElementById("timetable"); el.innerHTML="";
+  tt.forEach(([s,e,t,d],i)=>{
+    const on=!!day.tt[i], cur=live&&m>=toMin(s)&&m<toMin(e), past=live&&m>=toMin(e);
+    const b=document.createElement("button"); b.className="row"+(on?" done":"")+(cur?" cur":"")+(past?" past":"");
+    b.innerHTML='<span class="tm">'+fmtT(s)+'</span><span class="grow"><span class="t">'+t+'</span><span class="d">'+d+'</span></span><span class="box">'+(on?"✓":"")+'</span>';
+    b.onclick=()=>{ day.tt[i]=!day.tt[i]; save(); if(day.tt[i]) toast("+5 XP"); renderAll(); };
+    el.appendChild(b);
+    if(cur) b.dataset.cur="1";
+  });
+}
+function renderRoad(){
+  const el=document.getElementById("roadmap"); el.innerHTML="";
+  for(let i=0;i<11;i++){
+    const d=addDays(START,i), k=keyOf(d), st=status(k), w=workoutFor(k);
+    const sym = st==="ok"?"✓":st==="pass"?"P":st==="miss"?"✕":"";
+    const r=document.createElement("div"); r.className="row static"+(k===TODAY?" cur":"")+(st==="ok"?" done":"");
+    r.innerHTML='<span class="tm">D'+(i+1)+'<br>'+d.toLocaleDateString("en-IN",{weekday:"short",day:"numeric"})+'</span><span class="grow"><span class="t">'+w.name+'</span><span class="d">'+ROAD_NOTES[i]+'</span></span><span class="tag" style="color:'+(st==="miss"?"var(--bad)":st==="pass"?"var(--warn)":"var(--accent)")+'">'+sym+'</span>';
+    el.appendChild(r);
+  }
+  PHASES.forEach(([a,b,lbl,t,d])=>{
+    const cur=TODAY>=a&&TODAY<=b;
+    const r=document.createElement("div"); r.className="row static"+(cur?" cur":"");
+    r.innerHTML='<span class="tm">'+lbl+'</span><span class="grow"><span class="t">'+t+'</span><span class="d">'+d+'</span></span>';
+    el.appendChild(r);
+  });
+}
+function renderNow(){
+  const el=document.getElementById("nowCard");
+  const m=nowMin();
+  if(TODAY<keyOf(START)){
+    const mins=(24*60-m)+toMin("07:30");
+    el.innerHTML='<div class="lbl"><h3>Lock-in starts</h3><span class="clock">'+Math.floor(mins/60)+'h '+pad(mins%60)+'m</span></div><div class="what">Sat 7:30 am</div><div class="next">Tonight: shoes by the door, clothes out, remote in another room, phone away by 12.</div>';
+    return;
+  }
+  const tt=TT[modeFor(TODAY)], day=D(TODAY); day.tt=day.tt||{};
+  let i=tt.findIndex(([s,e])=>m>=toMin(s)&&m<toMin(e));
+  if(i<0){ // before wake
+    const mins=toMin(tt[0][0])-m;
+    el.innerHTML='<div class="lbl"><h3>Sleep</h3><span class="clock">'+Math.floor(mins/60)+'h '+pad(mins%60)+'m</span></div><div class="what">Wake at '+fmtT(tt[0][0])+'</div><div class="next">Phone down. Recovery is where the muscle grows.</div>';
+    return;
+  }
+  const [s,e,t,d]=tt[i], left=toMin(e)-m, nx=tt[i+1], on=!!day.tt[i];
+  el.innerHTML='<div class="lbl"><h3>Right now · till '+fmtT(e)+'</h3><span class="clock">'+(left>=60?Math.floor(left/60)+'h ':'')+pad(left%60)+'m</span></div><div class="what">'+t+'</div><p class="muted" style="margin:0">'+d+'</p>'+
+    '<div class="btns"><button class="btn sm" id="nowDone">'+(on?"Done ✓":"Mark done")+'</button>'+(t==="Workout"?'<button class="btn ghost sm" id="nowTrain">Open workout</button>':'')+(t==="Night check-in"?'<button class="btn ghost sm" id="nowCi">Open check-in</button>':'')+'</div>'+
+    (nx?'<div class="next">Next at '+fmtT(nx[0])+': <b style="color:var(--fg)">'+nx[2]+'</b></div>':'');
+  document.getElementById("nowDone").onclick=()=>{ day.tt[i]=!day.tt[i]; save(); if(day.tt[i]) toast("+5 XP"); renderAll(); };
+  const tr=document.getElementById("nowTrain"); if(tr) tr.onclick=()=>go("train");
+  const ci=document.getElementById("nowCi"); if(ci) ci.onclick=()=>document.getElementById("checkin").scrollIntoView({behavior:"smooth"});
+}
+setInterval(()=>{ if(keyOf(new Date())!==TODAY){ location.reload(); return; } renderNow(); if(!document.getElementById("tab-me").hidden) renderTimetable(); },30000);
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ if(keyOf(new Date())!==TODAY) location.reload(); else { renderNow(); renderTimetable(); } } });
+document.getElementById("bkCopy").onclick=async()=>{ const code=btoa(unescape(encodeURIComponent(JSON.stringify(S)))); const ok=await copy(code);
+  if(ok) toast("Backup copied. Paste it in your notes."); else { document.getElementById("bkRestore").hidden=false; document.getElementById("bkIn").value=code; document.getElementById("bkIn").select(); toast("Select and copy the code"); } };
+document.getElementById("bkShow").onclick=()=>{ const el=document.getElementById("bkRestore"); el.hidden=!el.hidden; };
+document.getElementById("bkLoad").onclick=()=>{ try { S=Object.assign(blank(),JSON.parse(decodeURIComponent(escape(atob(document.getElementById("bkIn").value.trim()))))); save(); toast("Restored"); renderAll(); } catch(e){ toast("That code didn't work. Copy it again."); } };
+let resetArmed=false;
+document.getElementById("resetBtn").onclick=()=>{ if(!resetArmed){ resetArmed=true; document.getElementById("resetMsg").hidden=false; return; }
+  S=blank(); save(); resetArmed=false; document.getElementById("resetMsg").hidden=true; toast("Wiped"); renderAll(); };
+
+/* ---------- nav ---------- */
+function go(tab){
+  document.querySelectorAll("nav button").forEach(x=>x.setAttribute("aria-selected",x.dataset.tab===tab?"true":"false"));
+  document.querySelectorAll("section").forEach(s=>s.hidden=s.id!=="tab-"+tab);
+  try{ sessionStorage.setItem("rono-tab",tab); }catch(e){}
+  window.scrollTo(0,0);
+}
+document.querySelectorAll("nav button").forEach(b=>b.onclick=()=>go(b.dataset.tab));
+const hashTab=(location.hash||"").slice(1);
+if(["today","train","fuel","skin","voice","me"].includes(hashTab)) go(hashTab);
+
+function renderAll(){ renderHeader(); renderDebts(); renderNow(); renderDayPick(); renderQuests(); renderCheckin(); renderPass(); renderTrain(); renderFuel(); renderSkin(); renderVoice(); renderMe(); }
+renderAll();
+</script>
+
+<script>
+if("serviceWorker" in navigator){ window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{})); }
+</script>
+</body>
+</html>
